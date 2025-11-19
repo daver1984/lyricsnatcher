@@ -71,12 +71,65 @@ async def transcribir_y_traducir(solicitud: SolicitudTranscripcion):
     5. Guardar metadatos y letra
     6. Limpiar archivos temporales
     """
-    # TODO: Implementar lógica completa
-    # Por ahora, respuesta de prueba
-    raise HTTPException(
-        status_code=501,
-        detail="Endpoint en desarrollo. Próximamente: descarga, transcripción y traducción."
-    )
+    from downloader import descargar_audio, limpiar_archivo
+    from transcriber.whisper_transcriber import transcribir_audio
+    from translator import traducir_texto
+    from database import guardar_letra, buscar_por_url
+    
+    url_str = str(solicitud.url)
+    
+    # Verificar si ya existe en base de datos
+    letra_existente = buscar_por_url(url_str)
+    if letra_existente and letra_existente['language_dst'] == solicitud.target_lang:
+        return RespuestaTranscripcion(**letra_existente)
+    
+    ruta_audio = None
+    
+    try:
+        # 1. Descargar audio
+        ruta_audio, metadata = descargar_audio(url_str)
+        
+        # 2. Transcribir con Whisper
+        resultado_transcripcion = transcribir_audio(ruta_audio)
+        texto_original = resultado_transcripcion['text']
+        idioma_original = resultado_transcripcion['language']
+        
+        # 3. Traducir
+        texto_traducido = traducir_texto(
+            texto_original, 
+            idioma_original, 
+            solicitud.target_lang
+        )
+        
+        # 4. Preparar datos para guardar
+        datos_letra = {
+            'title': metadata['title'],
+            'artist': metadata['artist'],
+            'album': metadata.get('album'),
+            'year': metadata.get('year'),
+            'source_url': url_str,
+            'language_src': idioma_original,
+            'language_dst': solicitud.target_lang,
+            'text_src': texto_original,
+            'text_dst': texto_traducido
+        }
+        
+        # 5. Guardar en base de datos
+        guardar_letra(datos_letra)
+        
+        # 6. Retornar respuesta
+        return RespuestaTranscripcion(**datos_letra)
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en el proceso: {str(e)}"
+        )
+    
+    finally:
+        # 7. Limpiar archivo temporal
+        if ruta_audio:
+            limpiar_archivo(ruta_audio)
 
 if __name__ == "__main__":
     import uvicorn
