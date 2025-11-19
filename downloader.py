@@ -7,8 +7,15 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Tuple
 import yt_dlp
+import shutil
 
 TMP_DIR = Path(__file__).parent / "tmp"
+
+# Localizar ffmpeg en el sistema
+FFMPEG_LOCATION = None
+ffmpeg_path = shutil.which("ffmpeg")
+if ffmpeg_path:
+    FFMPEG_LOCATION = str(Path(ffmpeg_path).parent)
 
 def extraer_metadata(info: dict) -> Dict[str, any]:
     """
@@ -77,8 +84,8 @@ def descargar_audio(url: str) -> Tuple[Path, Dict[str, any]]:
     opciones = {
         'format': 'bestaudio/best',
         'outtmpl': str(temp_id),
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,  # Mostrar salida para debug
+        'no_warnings': False,
         'extract_flat': False,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -89,6 +96,10 @@ def descargar_audio(url: str) -> Tuple[Path, Dict[str, any]]:
             '-ac', '1',      # Mono
         ],
     }
+    
+    # Agregar ubicación de ffmpeg si se encontró
+    if FFMPEG_LOCATION:
+        opciones['ffmpeg_location'] = FFMPEG_LOCATION
     
     try:
         # Descargar y extraer información
