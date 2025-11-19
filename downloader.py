@@ -20,6 +20,14 @@ def extraer_metadata(info: dict) -> Dict[str, any]:
     Returns:
         Diccionario con title, artist, album, year
     """
+    if not info:
+        return {
+            'title': 'Desconocido',
+            'artist': 'Desconocido',
+            'album': None,
+            'year': None
+        }
+    
     title = info.get('title', 'Desconocido')
     
     # Intentar obtener artista del campo 'artist' o 'uploader'
@@ -27,11 +35,15 @@ def extraer_metadata(info: dict) -> Dict[str, any]:
     
     # Álbum y año pueden no estar disponibles
     album = info.get('album')
-    year = info.get('release_year') or info.get('upload_date', '')[:4] if info.get('upload_date') else None
-    if year:
+    
+    # Extraer año de forma segura
+    year = None
+    if info.get('release_year'):
+        year = info.get('release_year')
+    elif info.get('upload_date'):
         try:
-            year = int(year)
-        except:
+            year = int(str(info.get('upload_date'))[:4])
+        except (ValueError, TypeError):
             year = None
     
     return {
@@ -82,6 +94,10 @@ def descargar_audio(url: str) -> Tuple[Path, Dict[str, any]]:
         # Descargar y extraer información
         with yt_dlp.YoutubeDL(opciones) as ydl:
             info = ydl.extract_info(url, download=True)
+            
+            if not info:
+                raise Exception("No se pudo extraer información del video")
+            
             metadata = extraer_metadata(info)
         
         # Verificar que se creó el archivo
@@ -90,6 +106,11 @@ def descargar_audio(url: str) -> Tuple[Path, Dict[str, any]]:
         
         return archivo_salida, metadata
     
+    except yt_dlp.utils.DownloadError as e:
+        # Limpiar archivo si existe
+        if archivo_salida.exists():
+            archivo_salida.unlink()
+        raise Exception(f"Error al descargar desde la URL: {str(e)}")
     except Exception as e:
         # Limpiar archivo si existe
         if archivo_salida.exists():
