@@ -1,0 +1,21 @@
+LyricSnatcher - Sistema Web de Transcripción y Traducción de Letras
+
+Arquitectura:
+
+Frontend + Backend: El agente elegirá el mejor stack moderno y escalable
+Entrada: Usuario pega URL de YouTube
+Proceso:
+Descarga audio con yt-dlp (temporal)
+Whisper transcribe la letra original
+Traduce a idioma seleccionado
+Elimina archivo de audio
+Salida: Muestra traducción en pantalla
+Persistencia:
+❌ Videos/audio (temporal, se eliminan)
+✅ Letras + metadatos (artista, banda, canción) para compartir
+Idiomas: Español (principal), Inglés, Portugués
+Todo en español: Código, comentarios, UI, documentación
+Aspectos legales/éticos importantes:
+
+No almacenar contenido de audio/video (solo texto transcrito)
+Sistema de transcripción educativo/personal

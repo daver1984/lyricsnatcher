@@ -1,0 +1,9 @@
+openai-whisper
+torch
+ffmpeg-python
+fastapi
+uvicorn[standard]
+yt-dlp
+libretranslatepy
+argostranslate
+python-dotenv
